@@ -1,0 +1,42 @@
+currentBuild.displayName = "Tomcat-Deployment-Pipeline"+currentBuild.number
+
+pipeline {
+    agent any
+    tools {
+        maven 'mvn_home'
+      }
+
+    stages {
+        stage('SCM-Checkout') {
+            steps {
+                git branch: 'main', 
+                credentialsId: 'git-credential', 
+                url: 'https://github.com/laraibclub/AWS-DevOps-16.git'
+            }
+        }
+        stage('Sonar-Quality-Test') {
+            steps {
+                withSonarQubeEnv('sonar-server') {
+                    sh 'mvn sonar:sonar'
+                }
+            }
+        }
+        stage('Maven-Action') {
+            steps {
+                sh 'mvn clean compile package'
+            }
+        }
+        stage('Quality-Gate-Check') {
+            steps {
+                timeout (time : 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        stage('Tomcat-Deployment') {
+            steps {
+                echo 'Tomcat-Deployment'
+            }
+        }
+    }
+}
